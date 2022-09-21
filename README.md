@@ -3,9 +3,9 @@ A function to create association network for microbiome data: bacteria-bacteria 
 This function is dedicated to make graph/network based on the spearman (also pearson) correlation and the significant level of this correlation corrected for false dicorevy rate (FDR) by Benjamini-Hochberg (by default, other methods are also accepted. See the help sheet for p.ajust() function). This is a costume function and as it doens't count for partial effects of taxa, you must only use it for visualization and not for validation of associations. The function is also able to perfomr these analysis with and without Centered-Log ratio (CLR) transformation to account for difference in read depth. For the input matrix, you can simply use the phyloseq object and the function will do the rest. By default, the graph will be made from a dataframe, based on the most significantly correlated ASVs. 
 
 ## Function parameters:
-'Treatment_prune': if you want to break your dataset into the sublevels of the treatment, default is "TRUE". treatment: the column in your dataset with which you want to breack your dataset into sub-groups of treatments. treat_level: the level of your interest in the treatment column, which you want to split the dataset for. top_n_taxa: specifies the number of most diverse taxa based on their standard deviation filtering_threshold: number of the samples each ASV should appear in order to be passed through the filter.
-cor_threshold: is for filtering the taxa with the absolute value of correlation below the threshold value (0.55) sig_threshold: is the significant alpha for the adjusted p.value. directed = is used for making the edge atributes. The Default is FALSE.
-graph_mode = is either directed or undirected and is used when graph_type is set to "adjacency" taxa_level : is for making the network for different taxa, default is Genus. color_pallet: is the pallet from which the color of the vertice will be chosen. The dfault is "qual", but it can also be 'div', 'qual', 'seq'. edge_pos_color: is the color given to the edges between ASVs with positive correlation. Default is cyan. edge_neg_color: is the color given to the edges between ASVs with negative correlation. Default is red. treatment_prune: if you want to prune your taxa according to a particular treatment. The defaule it FALSE. Therefore, the treatment argument will be ignored. treatment: if the treatment_prune argument is set to TRUE, treatment will be considered in the downstream analysis. the dfault is ct (control). But you can always cahnge it to one of your treatments.
+`clr`: if you want to centered-log ratio transform data. `rel_abund`: if you want to do cumulative normalisation on the data into their relative abundance. `Treatment_prune`: if you want to break your dataset into the sublevels of the treatment, default is "TRUE". `treatment`: the column in your dataset with which you want to breack your dataset into sub-groups of treatments. `treat_level`: the level of your interest in the treatment column, which you want to split the dataset for. `top_n_taxa`: specifies the number of most diverse taxa based on their standard deviation filtering_threshold: number of the samples each ASV should appear in order to be passed through the filter.
+`cor_threshold`: is for filtering the taxa with the absolute value of correlation below the threshold value (0.55). `sig_threshold`: is the significant alpha for the adjusted p.value. `directed`: is used for making the edge atributes. The Default is FALSE.
+`taxa_level`: is for making the network for different taxa, default is Genus. `color_pallet`: is the pallet from which the color of the vertice will be chosen. The dfault is `qual`, but it can also be 'div', 'qual', 'seq'. `edge_pos_color`: is the color given to the edges between ASVs with positive correlation. Default is cyan. `edge_neg_color`: is the color given to the edges between ASVs with negative correlation. Default is red. treatment_prune: if you want to prune your taxa according to a particular treatment. The defaule it FALSE. Therefore, the treatment argument will be ignored. treatment: if the treatment_prune argument is set to TRUE, treatment will be considered in the downstream analysis. the dfault is ct (control). But you can always cahnge it to one of your treatments.
 
 ```R
 
@@ -14,7 +14,7 @@ network_forger = function(data, rel_abund = TRUE, clr = TRUE, treatment_prune = 
                           filtering_threshold = 30,  FDR_method = "BH", y_cor= NULL, 
                           cor_method = c("spearman", "pearson", "kendall"),
                           cor_threshold = 0.55, sig_threshold = 0.01,
-                          directed = "FALSE", graph_mode= c("directed", "undirected"),
+                          directed = "FALSE", 
                           taxa_level = "Genus", top_taxa = 500, color_pallet = c("qual", "div", "seq"),
                           edge_pos_color = "cyan", edge_neg_color = "red"){
 
@@ -503,7 +503,7 @@ edge$cor <- round(edge$cor, 2)
 #making a name index for the phylums to be painted on the vectors
 taxa.names = c("Kingdom", "Phylum", "Class", "Order", "Family", "Genus", "Species")
 color.index = c("King.col", "Phyl.col", "Class.col", "Ord.col", "Fam.col", "Gen.col", "Spec.col")
-
+    
 #making a color vector for the taxa to be painted on the vertices
 library(RColorBrewer)
 
@@ -512,116 +512,114 @@ pals = brewer.pal.info[brewer.pal.info$category %in% color_pallet,]
 col_vector = unlist(mapply(brewer.pal, pals$maxcolors, rownames(pals))) %>% unique
 
 if(taxa_level == "Species"){
+    
+    taxa.table = taxdat[complete.cases(taxdat), seq(which(taxa.names %in% taxa_level))]
+    
 
-    taxa.table = phyloseq::tax_table(physeq)[complete.cases(phyloseq::tax_table(physeq)),seq(which(taxa.names %in%taxa_level))]
-
-
-} else {
-    taxa.table = phyloseq::tax_table(physeq)[complete.cases(phyloseq::tax_table(physeq)),seq(which(taxa.names %in%taxa_level))]
+} else { 
+    taxa.table = tax_table(physeq)[complete.cases(tax_table(physeq)),seq(which(taxa.names %in%taxa_level))]
     taxa.table = taxa.table[!rownames(taxa.table)%in%"Unknown",]
 }
-
-
+    
+    
 colindex=matrix(NA, nrow = nrow(taxa.table), ncol = ncol(taxa.table))#making different taxa dataframe correspondent to the name of our "From" vertex names.
  for(j in 1:ncol(colindex)){
-    colindex[,j] = col_vector[as.numeric(as.factor(taxa.table[, j]))]
-
- 
+    colindex[,j] = col_vector[as.numeric(as.factor(taxa.table[, j]))] 
+      
+ } 
 
 colnames(colindex) = color.index[seq(ncol(colindex))]
 rownames(colindex) = rownames(taxa.table)
 colindex = cbind(taxa.table, colindex)
-}
 
 if(taxa_level == "Kingdom"){
-
+    
 
 for(n in taxa.names[1:ncol(taxa.table)]){
             for(m in color.index[1:ncol(taxa.table)]){
-
+                
             vertex_attr(graph.df, n)= colindex[rownames(colindex) %in% names(V(graph.df)),n] %>% as.vector
             vertex_attr(graph.df, m)= colindex[rownames(colindex) %in% names(V(graph.df)),m] %>% as.vector
-
-
+            
+ 
 }
-    }
-
+    } 
+    
 } else if (taxa_level == "Phylum") {
 
 for(n in taxa.names[1:ncol(taxa.table)]){
             for(m in color.index[1:ncol(taxa.table)]){
-
+                
             vertex_attr(graph.df, n)= colindex[rownames(colindex) %in% names(V(graph.df)),n] %>% as.vector
             vertex_attr(graph.df, m)= colindex[rownames(colindex) %in% names(V(graph.df)),m] %>% as.vector
-
-
+            
+ 
 }
-    }
-
+    } 
+  
 } else if(taxa_level == "Order"){
-
+    
  for(n in taxa.names[1:ncol(taxa.table)]){
             for(m in color.index[1:ncol(taxa.table)]){
-
+                
             vertex_attr(graph.df, n)= colindex[rownames(colindex) %in% names(V(graph.df)),n] %>% as.vector
             vertex_attr(graph.df, m)= colindex[rownames(colindex) %in% names(V(graph.df)),m] %>% as.vector
-
-
+            
+ 
 }
-    }
-
+    }  
+    
 } else if(taxa_level == "Class") {
-
+  
     for(n in taxa.names[1:ncol(taxa.table)]){
             for(m in color.index[1:ncol(taxa.table)]){
-
+                
             vertex_attr(graph.df, n)= colindex[rownames(colindex) %in% names(V(graph.df)),n] %>% as.vector
             vertex_attr(graph.df, m)= colindex[rownames(colindex) %in% names(V(graph.df)),m] %>% as.vector
-
-
+            
+ 
 }
-    }
-
+    } 
+    
 } else if(taxa_level == "Family") {
-
+ 
     for(n in taxa.names[1:ncol(taxa.table)]){
             for(m in color.index[1:ncol(taxa.table)]){
-
+                
             vertex_attr(graph.df, n)= colindex[rownames(colindex) %in% names(V(graph.df)),n] %>% as.vector
             vertex_attr(graph.df, m)= colindex[rownames(colindex) %in% names(V(graph.df)),m] %>% as.vector
-
-
+            
+ 
 }
-    }
-
+    } 
+    
 } else if(taxa_level == "Genus"){
 
 for(n in taxa.names[1:ncol(taxa.table)]){
             for(m in color.index[1:ncol(taxa.table)]){
-
+                
             vertex_attr(graph.df, n)= colindex[rownames(colindex) %in% names(V(graph.df)),n] %>% as.vector
             vertex_attr(graph.df, m)= colindex[rownames(colindex) %in% names(V(graph.df)),m] %>% as.vector
-
-
+            
+ 
 }
-    }
-
+    } 
+     
 } else if(taxa_level == "Species"){
-
+    
 
     for(n in taxa.names[1:ncol(taxa.table)]){
             for(m in color.index[1:ncol(taxa.table)]){
-
+                
             vertex_attr(graph.df, n)= colindex[rownames(colindex) %in% names(V(graph.df)),n] %>% as.vector
             vertex_attr(graph.df, m)= colindex[rownames(colindex) %in% names(V(graph.df)),m] %>% as.vector
-
-
+            
+ 
 }
-    }
+    } 
 
 
-
-} else {
+ } else {
 print('Warning! the taxa name has not been entered correctly :( 
 \n it must be one of this list: "Kingdom", "Phylum", "Class", "Order", "Family", "Genus", "Species"')
 }
@@ -644,6 +642,7 @@ structure(list(asv.filt = asv.filt, cor.pval = cor.pval, cor = cor, edge.df = ed
 
 
 }
+
 
 
 
