@@ -5,7 +5,7 @@ This function is dedicated to make graph/network based on the spearman (also pea
 ## Function parameters:
 `clr`: if you want to centered-log ratio transform data. `rel_abund`: if you want to do cumulative normalisation on the data into their relative abundance. `Treatment_prune`: if you want to break your dataset into the sublevels of the treatment, default is "TRUE". `treatment`: the column in your dataset with which you want to breack your dataset into sub-groups of treatments. `treat_level`: the level of your interest in the treatment column, which you want to split the dataset for. `top_n_taxa`: specifies the number of most diverse taxa based on their standard deviation filtering_threshold: number of the samples each ASV should appear in order to be passed through the filter.
 `cor_threshold`: is for filtering the taxa with the absolute value of correlation below the threshold value (0.55). `sig_threshold`: is the significant alpha for the adjusted p.value. `directed`: is used for making the edge atributes. The Default is FALSE.
-`taxa_level`: is for making the network for different taxa, default is Genus. `color_pallet`: is the pallet from which the color of the vertice will be chosen. The dfault is `qual`, but it can also be 'div', 'qual', 'seq'. `edge_pos_color`: is the color given to the edges between ASVs with positive correlation. Default is cyan. `edge_neg_color`: is the color given to the edges between ASVs with negative correlation. Default is red. treatment_prune: if you want to prune your taxa according to a particular treatment. The defaule it FALSE. Therefore, the treatment argument will be ignored. treatment: if the treatment_prune argument is set to TRUE, treatment will be considered in the downstream analysis. the dfault is ct (control). But you can always cahnge it to one of your treatments.
+`taxa_level`: is for making the network for different taxa, default is Genus. `color_pallet`: is the pallet from which the color of the vertice will be chosen. The dfault is `qual`, but it can also be 'div', 'qual', 'seq'. `edge_pos_color`: is the color given to the edges between ASVs with positive correlation. Default is cyan. `edge_neg_color`: is the color given to the edges between ASVs with negative correlation. Default is red. treatment_prune: if you want to prune your taxa according to a particular treatment. The defaule it FALSE. Therefore, the treatment argument will be ignored. treatment: if the treatment_prune argument is set to TRUE, treatment will be considered in the downstream analysis. the dfault is ct (control). But you can always cahnge it to one of your treatments. `y_cor`: by default is NULL, which means the association will made between taxa. If you, for instance, have a matrix of your metabolite data, e.g. SCFA, you can pass it onto it and the association will be build between taxa-taxa and taxa-metabolite.
 
 ```R
 
@@ -646,7 +646,17 @@ structure(list(asv.filt = asv.filt, cor.pval = cor.pval, cor = cor, edge.df = ed
 
 
 
+```
 
+### Testing the function
 
+```R
+graph.dig.nodiar = network_forger(data = gen.dig, sig_threshold = 0.01, cor_threshold = 0.6, rel_abund = F, 
+				  clr = T, taxa_level = "Genus", y_cor = NULL, cor_method = "spearman",
+                                  top_taxa = 100, treatment_prune = TRUE, treat_level = "NoDiar", treatment = "status")
 
 ```
+
+
+![Association network of taxa](https://github.com/farhadm1990/Shinny-network/blob/main/NoDiar.jpeg)
+> Figure 1. Significant (p.adjust < 0.01) association network between different Genera based on Spearman rank test. Color of each vertex is the associated phyla and the edge color is positive or negative correlation. 
