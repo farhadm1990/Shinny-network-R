@@ -656,7 +656,86 @@ graph.dig.nodiar = network_forger(data = gen.dig, sig_threshold = 0.01, cor_thre
                                   top_taxa = 100, treatment_prune = TRUE, treat_level = "NoDiar", treatment = "status")
 
 ```
-
+### Visulizing the network
+```R
+ggnetwork::ggnetwork(graph.dig.nodiar$graph, layout = layout.kamada.kawai(graph.dig.nodiar$graph)) %>% 
+ggplot(aes(x = x, y = y, xend = xend, yend = yend)) + 
+theme_blank()+ 
+    geom_edges(aes(color = direction)) + 
+geom_nodes(aes(fill = Phylum), shape = 21, size = 10) + 
+geom_nodetext_repel(aes(label = Genus), nudge_x = 0, 
+                    nudge_y = 0.05, size = 5,point.padding = unit(0.5, "lines"))+
+#geom_edgetext(aes(label = round(cor, 2)), size = 1, color = "black", fill = "white", label.size = 0) +
+labs(color = "Correlation") + scale_color_manual(values = c("red", "cyan")) + 
+ggtitle("NoDiar, cor > 0.6, FDR <= 0.1")
+```
 
 ![Association network of taxa](https://github.com/farhadm1990/Shinny-network/blob/main/NoDiar.jpeg)
 > Figure 1. Significant (p.adjust < 0.01) association network between different Genera based on Spearman rank test. Color of each vertex is the associated phyla and the edge color is positive or negative correlation. 
+
+### Network of taxa with chemical biomarkers
+```R
+comp =asv.filt
+y  = cor.scfa   
+ 
+    
+if (identical(sort(colnames(y)), sort(colnames(comp)))){
+    y = as.matrix(y)
+} else {
+    y = t(as.matrix(y))
+}
+#check if they have the same dimensions
+    if(dim(comp)[2] > dim(y)[2]){
+    
+    comp = comp[, colnames(comp)%in% colnames(y)]
+    
+} else if (dim(comp)[2] < dim(y)[2]){
+    y = y[, colnames(y)%in% colnames(comp)]
+} else {
+    comp = comp
+    y = y
+}
+    
+   dat.ls <- list()
+    dat.ls.y <- list()
+    
+  for(i in treat.vect){
+      
+       dat.ls[[i]] <- comp[, colnames(comp) %in% rownames(ps@sam_data[ps@sam_data[,treat]== i])]  
+       dat.ls.y[[i]] <- y[, colnames(y) %in% rownames(ps@sam_data[ps@sam_data[,treat]== i])]
+      
+}
+    cor_main <- list()
+    
+    for(i in treat.vect){
+                
+        cor_main[[i]] <- Hmisc::rcorr(x = t(dat.ls[[i]] ), y = t(dat.ls.y[[i]]), type = method)
+        
+    }
+   
+cor.pval <- list()
+Cor <- list() 
+  #sds <- list()
+  #  ord <- list()
+   # cor.sds <- list()
+    #cor.ord <- list()
+for(i in treat.vect){
+    cor.pval[[i]] = cor_main[[i]]$P[!rownames(cor_main[[i]]$P) %in% rownames(dat.ls.y[[i]]),] 
+    #sds[[i]] <- rowSds(cor.pval[[i]], na.rm = TRUE)
+    #ord[[i]] <- order(sds[[i]], decreasing = TRUE)[1:top_n_taxa]
+    #cor.pval[[i]] <- cor.pval[[i]][ord[[i]],]
+    
+    Cor[[i]] = cor_main[[i]]$r[!rownames(cor_main[[i]]$r) %in% rownames(dat.ls.y[[i]]),]
+   # cor.sds[[i]] <- rowSds(Cor[[i]], na.rm = TRUE)
+    #cor.ord[[i]] <- order(Cor[[i]], decreasing = TRUE)[1:top_n_taxa]
+   # Cor[[i]] <- Cor[[i]][cor.ord[[i]],]
+}
+ cor.pval = cor.pval %>%  reshape2::melt(value.name = "pval", varnames = c("from", "to"))
+    #cor.pval = cor.pval[complete.cases(cor.pval),]
+ Cors = Cor %>%  reshape2::melt(value.name = "cor", varnames = c("from", "to"))
+    #Cors = Cors[complete.cases(Cors),]
+}
+```
+
+![Association graph between taxa and chemicals](https://github.com/farhadm1990/Shinny-network-R/blob/main/Graph_taxa_biomarker.png)
+> Figure 2. Significant (p.adjust < 0.01) association network between different Genera based on Spearman rank test and chemicals produced by bacteria. Color of each vertex is the associated treatment and the edge color is positive or negative correlation. 
