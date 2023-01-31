@@ -737,5 +737,18 @@ for(i in treat.vect){
 }
 ```
 
+```R
+edge = edge[!unfactor(edge$from) == unfactor(edge$to),]
+graph.test1 <- igraph::graph_from_data_frame(edge, directed = F)
+graph.test1 = delete_edges(graph = graph.test1, edges = E(graph.test1)[which_multiple(graph.test1)]) 
+V(graph.test1)$color <- ifelse(E(graph.test1)$status == "NoDiar", "darkorchid3", 
+                             ifelse(E(graph.test1)$status == "DiarNoInfl", "springgreen2", "darkorange"))
+V(graph.test1)$shape <- ifelse(E(graph.test1)$status == "NoDiar",  'sphere', 
+                             ifelse(E(graph.test1)$status == "DiarNoInfl",  'sphere',  'sphere'))
+vertex_attr(graph.test1)$name %>% length
+
+plot(graph.test1, layout = layout.circle)
+```
+
 ![Association graph between taxa and chemicals](https://github.com/farhadm1990/Shinny-network-R/blob/main/Graph_taxa_biomarker.png)
 > Figure 2. Significant (p.adjust < 0.01) association network between different Genera based on Spearman rank test and chemicals produced by bacteria. Color of each vertex is the associated treatment and the edge color is positive or negative correlation. 
